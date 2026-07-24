@@ -10,14 +10,16 @@
       RANKS: root.RANKS, CAREER: root.CAREER, rankWeights: root.rankWeights,
       WORK_ROUNDS: root.WORK_ROUNDS, EDU_COMPOSITION: root.EDU_COMPOSITION,
       PRO_EDU: root.PRO_EDU, PRO_ABILITY: root.PRO_ABILITY,
-      CERT_BONUS: root.CERT_BONUS, DEGREE_BONUS: root.DEGREE_BONUS, LANG_BONUS: root.LANG_BONUS,
+      CERT_BONUS_CAP: root.CERT_BONUS_CAP, CERT_BONUS: root.CERT_BONUS, JOB_CERT: root.JOB_CERT,
+      LANG_DEGREE_CAP: root.LANG_DEGREE_CAP, LANG_BONUS: root.LANG_BONUS, DEGREE_BONUS: root.DEGREE_BONUS,
       HARDSHIP_BONUS: root.HARDSHIP_BONUS, CONTEST_CAP: root.CONTEST_CAP, EXCHANGE_CAP: root.EXCHANGE_CAP,
       BONUS_TOTAL: root.BONUS_TOTAL,
     });
   }
 })(typeof self !== "undefined" ? self : this, function (D) {
   const { CAREER, rankWeights, EDU_COMPOSITION, PRO_EDU, PRO_ABILITY,
-    CERT_BONUS, DEGREE_BONUS, LANG_BONUS, HARDSHIP_BONUS, CONTEST_CAP, EXCHANGE_CAP, BONUS_TOTAL } = D;
+    CERT_BONUS_CAP, CERT_BONUS, JOB_CERT, LANG_DEGREE_CAP, LANG_BONUS, DEGREE_BONUS,
+    HARDSHIP_BONUS, CONTEST_CAP, EXCHANGE_CAP, BONUS_TOTAL } = D;
 
   const round2 = (x) => Math.round((x + Number.EPSILON) * 100) / 100; // 소수 셋째자리 반올림
   const round3 = (x) => Math.round((x + Number.EPSILON) * 1000) / 1000;
@@ -109,34 +111,47 @@
   // 최고 등급 소방경 이하 여부(전문학사·학사, 전산 자격증은 소방경 이하만)
   const isGyeonghyoIha = (rank) => !["소방정","소방령"].includes(rank); // 소방경 이하
 
-  // 어학 점수 → 배점
-  function langPoint(testId, score) {
-    const t = (LANG_BONUS.tests || []).find(x => x.id === testId);
-    if (!t || !score) return 0;
+  // 언어능력: 카테고리+시험 선택 → 배점. 점수형(mode:"score")/등급형(mode:"grade")
+  function langPoint(categoryId, testId, score, gradeId) {
+    const cat = (LANG_BONUS.categories || []).find(c => c.id === categoryId);
+    if (!cat) return 0;
+    const t = (cat.tests || []).find(x => x.id === testId);
+    if (!t) return 0;
+    if (t.mode === "grade") {
+      const g = (t.options || []).find(o => o.id === gradeId);
+      return g ? g.point : 0;
+    }
+    if (score === "" || score == null) return 0;
     for (const [th, p] of t.bands) { if (Number(score) >= th) return p; }
     return 0;
   }
 
   // 가점(별도 5점). 새 구조 입력(model.bonus):
-  //  { cert:{computer,jobTier,현계급취득}, degree:{ids[],현계급취득}, lang:{test,score,현계급취득},
-  //    hardship:{start,end,exclude}, contest:{value,현계급취득}, exchange:{value} }
+  //  { computer:{id,현계급취득}, job:{tier,현계급취득}, lang:{category,test,score,grade,현계급취득},
+  //    degree:{ids[],현계급취득}, hardship:{start,end,exclude}, contest:{value,현계급취득}, exchange:{value} }
   function bonusScore(rank, b) {
     b = b || {};
     const parts = {};
 
-    // ① 자격증(전산+직무) 상한 0.5, 현 계급 취득분만. 전산은 소방경 이하만.
-    const cb = b.cert || {};
-    let certSum = 0;
-    if (cb.현계급취득 !== false) {
-      if (cb.computer && isGyeonghyoIha(rank)) {
-        const c = (CERT_BONUS.computer || []).find(x => x.id === cb.computer);
-        if (c) certSum += c.point;
-      }
-      certSum += Number(cb.jobTier) || 0;
+    // ① 전산자격(별표1, 소방경 이하만) + ② 직무자격(별표2) — 합산 상한 0.5(시행규칙 제15조의2②)
+    const cpB = b.computer || {};
+    let compPt = 0;
+    if (cpB.현계급취득 !== false && cpB.id && isGyeonghyoIha(rank)) {
+      const c = (CERT_BONUS.computer || []).find(x => x.id === cpB.id);
+      if (c) compPt = c.point;
     }
-    parts.cert = Math.min(round2(certSum), CERT_BONUS.cap);
+    const jobB = b.job || {};
+    let jobPt = 0;
+    if (jobB.현계급취득 !== false) jobPt = Number(jobB.tier) || 0;
+    parts.computer = round2(compPt);
+    parts.job = round2(jobPt);
+    parts.cert = Math.min(round2(compPt + jobPt), CERT_BONUS_CAP);
 
-    // ② 학위 — 선택 중 가장 높은 1개. 전문학사·학사는 소방경 이하만.
+    // ③ 언어능력(별표3) + ④ 학위취득(제6조) — 합산 상한 0.5(시행규칙 제15조의2③)
+    const lb = b.lang || {};
+    let langPt = 0;
+    if (lb.현계급취득 !== false) langPt = langPoint(lb.category, lb.test, lb.score, lb.grade);
+
     const db = b.degree || {};
     let degPt = 0;
     if (db.현계급취득 !== false) {
@@ -147,30 +162,21 @@
         if (d.point > degPt) degPt = d.point;
       });
     }
-
-    // ③ 어학
-    const lb = b.lang || {};
-    let langPt = 0;
-    if (lb.현계급취득 !== false) langPt = langPoint(lb.test, lb.score);
-
-    // 학위+어학 합산 상한 0.5
-    parts.degree = round2(degPt);
     parts.lang = round2(langPt);
-    const degreeLang = Math.min(round2(degPt + langPt), LANG_BONUS.degreeLangCap);
-    parts.degreeLang = degreeLang;
+    parts.degree = round2(degPt);
+    parts.degreeLang = Math.min(round2(langPt + degPt), LANG_DEGREE_CAP);
 
-    // ④ 격무·기피부서: 6개월 초과분 × 0.05, 상한 2.0
+    // ⑤ 격무·기피부서(제7조①): 근무월수 × 0.05, 상한 2.0
     const hb = b.hardship || {};
     const hMonths = careerMonths(hb.start, hb.end, hb.exclude);
-    const hPay = Math.max(0, hMonths - HARDSHIP_BONUS.freeMonths);
-    parts.hardship = Math.min(round2(hPay * HARDSHIP_BONUS.perMonth), HARDSHIP_BONUS.cap);
+    parts.hardship = Math.min(round2(hMonths * HARDSHIP_BONUS.perMonth), HARDSHIP_BONUS.cap);
     parts.hardshipMonths = hMonths;
 
-    // ⑤ 대회·평가(우수실적) 상한 2.0, 현 계급
+    // ⑥ 우수실적(제8조·별표5) 상한 2.0, 현 계급
     const ct = b.contest || {};
     parts.contest = (ct.현계급취득 === false) ? 0 : clamp(Number(ct.value) || 0, 0, CONTEST_CAP);
 
-    // ⑥ 인사교류 상한 3.0
+    // ⑦ 인사교류(제9조) 상한 3.0
     parts.exchange = clamp(Number((b.exchange || {}).value) || 0, 0, EXCHANGE_CAP);
 
     const sum = parts.cert + parts.degreeLang + parts.hardship + parts.contest + parts.exchange;

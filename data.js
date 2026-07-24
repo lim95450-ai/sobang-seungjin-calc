@@ -3,8 +3,9 @@
  *
  * 근거:
  *  - 소방공무원 승진임용 규정(대통령령 제35641호, 시행 2025.7.8) 제9조·제10조·제11조
- *  - 소방공무원 승진임용 규정 시행규칙(행정안전부령) 제7조·제13조·제19조 및 별표3(개정 2024.1.11)
+ *  - 소방공무원 승진임용 규정 시행규칙(행정안전부령) 제7조·제13조·제15조의2·제19조 및 별표3(개정 2024.1.11)
  *  - 소방공무원 교육훈련성적 평정규정(소방청예규 제117호, 시행 2026.1.1) 제11조·제12조
+ *  - 소방공무원 가점평정 규정(소방청예규 제97호, 시행 2024.9.30) 제3~10조 및 별표1·2·3·5
  *
  * 계급 순서(높은→낮은): 소방정 > 소방령 > 소방경 > 소방위 > 소방장 > 소방교 > 소방사
  */
@@ -114,28 +115,85 @@ const REG_LINKS = {
   rule:  "https://www.law.go.kr/법령/소방공무원승진임용규정시행규칙",           // 시행규칙
 };
 
-/* 가점(별도, 합계 5점 이내). 시행규칙 제15조의2 + 소방공무원 가점평정 규정.
- * 항목별 상한: 자격증(전산+직무) 0.5 / 학위·어학 0.5 / 격무·기피 2.0 / 대회·평가 2.0 / 인사교류 3.0. */
+/* 가점(별도, 합계 5점 이내). 시행규칙 제15조의2 + 소방공무원 가점평정 규정(소방청예규 제97호, 2024.9.30).
+ * 항목별 상한(시행규칙 제15조의2②~⑥): 전산자격+직무자격(합산) 0.5 / 언어능력+학위취득(합산) 0.5 /
+ *   격무·기피부서 2.0 / 대회·평가(우수실적) 2.0 / 인사교류 3.0.
+ * 법령상 항목 구분: 전산자격(제3조·별표1) / 직무자격(제4조·별표2) / 언어능력(제5조·별표3) / 학위취득(제6조). */
 const BONUS_TOTAL = 5.0;
 
-// ① 자격증 가점 (별표1 전산 + 별표2 직무), 합산 상한 0.5점. 현 계급 취득분만.
+// 전산자격+직무자격 합산 상한(시행규칙 제15조의2②)
+const CERT_BONUS_CAP = 0.5;
+
+// ① 전산자격 가점 (제3조·별표1). 소방경 이하만. 워드프로세서·컴퓨터활용능력(국가기술자격법).
 const CERT_BONUS = {
-  cap: 0.5,
-  // 별표1 전산능력 (소방경 이하만)
+  cap: CERT_BONUS_CAP, // 하위 호환용(전산+직무 합산 상한)
   computer: [
     { id:"comp1", name:"컴퓨터활용능력 1급", point:0.5 },
     { id:"comp2", name:"컴퓨터활용능력 2급", point:0.3 },
     { id:"word",  name:"워드프로세서", point:0.3 },
   ],
-  // 별표2 직무 자격증 — 등급(배점)별 선택
+};
+
+// ② 직무자격 가점 (제4조·별표2, 2024.9.30 개정). 등급(배점)별 선택. 전 계급 대상.
+const JOB_CERT = {
   jobTiers: [
-    { point:0.5, desc:"기술사·기능장(해당 분야), 1~4급 항해·기관·운항사, 운송용·사업용조종사·항공(공장)정비사, 응급구조사1급, 간호사, 화재조사관, 소방시설관리사, 소방안전교육사, 전문인명구조사, 건축사, 제1종 대형운전면허" },
-    { point:0.3, desc:"기사(해당 분야), 5·6급 항해·기관사, 응급구조사2급, 화재대응능력평가1급, 인명구조사1급" },
-    { point:0.2, desc:"산업기사·기능사(해당 분야), 소형선박조종사, 잠수산업기사·잠수기능사, 화재대응능력평가2급, 인명구조사2급" },
+    { point:0.5, desc:"소방기술사·위험물기능장·자동차정비기능장·정보통신기술사, 1~4급 항해사·기관사·운항사, 비행기·회전익항공기 운송용조종사·사업용조종사·항공정비사·항공공장정비사, 응급구조사1급, 간호사, 화재조사관, 소방시설관리사, 소방안전교육사, 전문인명구조사, 건축사, 현장지휘관 자격인증제 초급·중급·고급·전략 현장지휘관" },
+    { point:0.3, desc:"소방설비기사(기계·전기), 자동차정비기사, 화재감식평가기사, 정보처리기사, 무선설비기사, 정보통신기사, 5·6급 항해사·기관사, 응급구조사2급, 화재대응능력평가1급, 인명구조사1급, 소방사다리차 운용사, 초경량비행장치 실기평가조종자·지도조종자(TS한국교통안전공단), 화학사고대응능력1급, 구급전문교육사1급, 선임 조종교육증명" },
+    { point:0.2, desc:"소방설비산업기사(기계·전기), 위험물산업기사·위험물기능사, 자동차정비산업기사, 화재감식평가산업기사, 정보처리산업기사·정보처리기능사, 무선설비산업기사·무선설비기능사, 정보통신산업기사, 소형선박조종사, 잠수산업기사·잠수기능사, 화재대응능력평가2급, 인명구조사2급, 제1종 대형운전면허, 초경량비행장치 조종자 1종·2종(TS한국교통안전공단), 화학사고대응능력2급, 구급전문교육사2급, 초급 조종교육증명" },
   ],
 };
 
-// ② 학위 (제6조). 같은 종류는 가장 높은 학위 1개만. 전문학사·학사는 소방경 이하만.
+// 언어능력+학위취득 합산 상한(시행규칙 제15조의2③)
+const LANG_DEGREE_CAP = 0.5;
+
+// ③ 언어능력 가점 (제5조·별표3). 국어·영어·일본어·중국어·제2외국어. 점수형(bands)/등급형(options).
+const LANG_BONUS = {
+  degreeLangCap: LANG_DEGREE_CAP, // 하위 호환용
+  categories: [
+    { id:"korean", name:"국어", tests:[
+      { id:"kr_write", name:"한국실용글쓰기검정", mode:"score", bands:[[750,0.5],[630,0.3],[550,0.2]] },
+      { id:"kbs",      name:"KBS한국어능력시험",   mode:"score", bands:[[770,0.5],[670,0.3],[570,0.2]] },
+    ]},
+    { id:"english", name:"영어", tests:[
+      { id:"toeic",     name:"TOEIC",             mode:"score", bands:[[900,0.5],[800,0.3],[600,0.2]] },
+      { id:"toefl_ibt", name:"TOEFL iBT",         mode:"score", bands:[[102,0.5],[88,0.3],[57,0.2]] },
+      { id:"toefl_pbt", name:"TOEFL PBT",         mode:"score", bands:[[608,0.5],[570,0.3],[489,0.2]] },
+      { id:"teps",      name:"TEPS(구)",           mode:"score", bands:[[850,0.5],[720,0.3],[500,0.2]] },
+      { id:"new_teps",  name:"New TEPS",          mode:"score", bands:[[488,0.5],[399,0.3],[268,0.2]] },
+      { id:"tosel",     name:"TOSEL(advanced)",   mode:"score", bands:[[880,0.5],[780,0.3],[580,0.2]] },
+      { id:"flex",      name:"FLEX",              mode:"score", bands:[[790,0.5],[714,0.3],[480,0.2]] },
+      { id:"pelt",      name:"PELT(main)",        mode:"score", bands:[[466,0.5],[304,0.3],[242,0.2]] },
+      { id:"gtelp",     name:"G-TELP Level 2",    mode:"score", bands:[[89,0.5],[75,0.3],[48,0.2]] },
+    ]},
+    { id:"japanese", name:"일본어", tests:[
+      { id:"jlpt", name:"JLPT", mode:"grade", options:[
+        { id:"n1", label:"1급(N1)", point:0.5 },
+        { id:"n2", label:"2급(N2)", point:0.3 },
+        { id:"n3", label:"3급(N3)", point:0.2 },
+        { id:"n4", label:"4급(N4)", point:0.2 },
+      ]},
+      { id:"jpt", name:"JPT", mode:"score", bands:[[850,0.5],[650,0.3],[550,0.2]] },
+    ]},
+    { id:"chinese", name:"중국어", tests:[
+      { id:"hsk", name:"HSK", mode:"grade", options:[
+        { id:"g9", label:"9급 이상", point:0.5 },
+        { id:"g8", label:"8급", point:0.3 },
+        { id:"g7", label:"7급", point:0.2 },
+      ]},
+      { id:"new_hsk", name:"新HSK", mode:"grade", options:[
+        { id:"g6", label:"6급", point:0.5 },
+        { id:"g5", label:"5급(210점 이상)", point:0.3 },
+        { id:"g4", label:"4급(195점 이상)", point:0.2 },
+      ]},
+    ]},
+    { id:"lang2", name:"제2외국어(프랑스어·독일어·스페인어·일본어·중국어·러시아어)", tests:[
+      { id:"snu_hufs", name:"서울대·한국외국어대학교 검정", mode:"score", bands:[[80,0.5],[70,0.3],[60,0.2]] },
+    ]},
+  ],
+};
+
+// ④ 학위취득 가점 (제6조). 국내외 학사학위 이상 취득자 대상(②항에 전문학사 배점 별도 규정).
+//    같은 종류는 가장 높은 학위 1개만. 전문학사·학사는 소방경 이하만.
 const DEGREE_BONUS = {
   items: [
     { id:"assoc",  name:"전문학사", point:0.1, gyeonghyoOnly:true },
@@ -145,29 +203,23 @@ const DEGREE_BONUS = {
   ],
 };
 
-// ③ 어학 (별표3). 점수 이상이면 해당 배점. 학위와 합산 상한 0.5점.
-const LANG_BONUS = {
-  degreeLangCap: 0.5, // 학위+어학 합산 상한
-  tests: [
-    { id:"toeic", name:"TOEIC",              bands:[[870,0.5],[790,0.3],[730,0.2]] },
-    { id:"toefl", name:"TOEFL iBT",          bands:[[99,0.5],[90,0.3],[78,0.2]] },
-    { id:"teps",  name:"TEPS(구)",           bands:[[800,0.5],[700,0.3],[630,0.2]] },
-    { id:"lang2", name:"제2외국어(서울대·한국외대 검정)", bands:[[80,0.5],[70,0.3],[60,0.2]] },
-  ],
-};
+// ⑤ 격무·기피부서 (제7조①). 근무한 날부터 1개월마다 0.05점, 상한 2.0점.
+//    (본문에 유예기간 규정 없음 — 근무 개시일부터 바로 산정) 휴직기간·30일 이상 연속 휴가기간 제외.
+const HARDSHIP_BONUS = { perMonth: 0.05, cap: 2.0 };
 
-// ④ 격무·기피부서 (제7조①). 6개월 초과분에 대해 1개월당 0.05점, 상한 2.0점. 휴직기간 제외.
-const HARDSHIP_BONUS = { freeMonths: 6, perMonth: 0.05, cap: 2.0 };
-
-// ⑤ 대회·평가 우수(우수실적) 상한 2.0, ⑥ 인사교류 상한 3.0 — 소방청장/시도지사 기준(직접 입력)
+// ⑥ 우수실적(대회·평가) 가점 (제8조·별표5). 전국단위 2.0점 이내/회, 시·도단위 0.5점 이내/회(계급당 총합 1.0 한도),
+//    제안채택: 중앙(금상1.0/은상0.8/동상0.6/장려·노력상0.5), 자체(특별상0.5/우수상0.3/우량상0.1). 총 상한 2.0점.
 const CONTEST_CAP = 2.0;
+// ⑦ 인사교류 가점 (제9조). 1개월마다 0.125점, 상한 3.0점 — 소방청·중앙부처 근무 후 시·도 복귀자만 해당.
 const EXCHANGE_CAP = 3.0;
 
 if (typeof module !== "undefined") {
   module.exports = { RANKS, CAREER, rankWeights, WORK_ROUNDS, EDU_COMPOSITION, PRO_EDU, PRO_ABILITY,
-    REG_LINKS, BONUS_TOTAL, CERT_BONUS, DEGREE_BONUS, LANG_BONUS, HARDSHIP_BONUS, CONTEST_CAP, EXCHANGE_CAP };
+    REG_LINKS, BONUS_TOTAL, CERT_BONUS_CAP, CERT_BONUS, JOB_CERT, LANG_DEGREE_CAP, LANG_BONUS, DEGREE_BONUS,
+    HARDSHIP_BONUS, CONTEST_CAP, EXCHANGE_CAP };
 }
 if (typeof window !== "undefined") {
   Object.assign(window, { RANKS, CAREER, rankWeights, WORK_ROUNDS, EDU_COMPOSITION, PRO_EDU, PRO_ABILITY,
-    REG_LINKS, BONUS_TOTAL, CERT_BONUS, DEGREE_BONUS, LANG_BONUS, HARDSHIP_BONUS, CONTEST_CAP, EXCHANGE_CAP });
+    REG_LINKS, BONUS_TOTAL, CERT_BONUS_CAP, CERT_BONUS, JOB_CERT, LANG_DEGREE_CAP, LANG_BONUS, DEGREE_BONUS,
+    HARDSHIP_BONUS, CONTEST_CAP, EXCHANGE_CAP });
 }

@@ -131,7 +131,7 @@
       el("a", { href: REG_LINKS.edu, target:"_blank", rel:"noopener", class:"reglink" }, "예규 제12조")));
 
     if (state.rank === "소방사") {
-      box.appendChild(el("p", { class:"section-note" }, "예규 제12조. 소방사는 취득시점과 무관하게 보유 여부로 평정합니다. 화재대응능력평가 2급은 전문능력이 아니라 가점(자격증)에서 0.2점입니다."));
+      box.appendChild(el("p", { class:"section-note" }, "예규 제12조. 소방사는 취득시점과 무관하게 보유 여부로 평정합니다."));
       const list = el("div", { class:"checklist" });
       PRO_ABILITY.소방사.items.forEach(it => list.appendChild(certCheck(it, pa, false)));
       box.appendChild(list);
@@ -182,9 +182,10 @@
 
   function bonusBlock() {
     const bm = m().bonus || (m().bonus = {});
-    if (!bm.cert) bm.cert = { computer:"", jobTier:0, 현계급취득:true };
+    if (!bm.computer) bm.computer = { id:"", 현계급취득:true };
+    if (!bm.job) bm.job = { tier:0, 현계급취득:true };
+    if (!bm.lang) bm.lang = { category:"", test:"", score:"", grade:"", 현계급취득:true };
     if (!bm.degree) bm.degree = { ids:[], 현계급취득:true };
-    if (!bm.lang) bm.lang = { test:"", score:"", 현계급취득:true };
     if (!bm.hardship) bm.hardship = { start:"", end:"", exclude:"" };
     if (!bm.contest) bm.contest = { value:"", 현계급취득:true };
     if (!bm.exchange) bm.exchange = { value:"" };
@@ -195,29 +196,66 @@
     box.appendChild(el("p", { class:"section-note" },
       "시행규칙 제15조의2 + ",
       el("a", { href: REG_LINKS.bonus, target:"_blank", rel:"noopener" }, "소방공무원 가점평정 규정"),
-      ". 각 항목은 현 계급에서 취득·수행한 경우만 인정됩니다."));
+      "(소방청예규 제97호). 각 항목은 원칙적으로 현 계급에서 취득·수행한 경우만 인정됩니다(제2조)."));
 
-    // ① 자격증 가점 (전산 별표1 + 직무 별표2), 상한 0.5
-    box.appendChild(el("h3", {}, "자격증 가점 ", el("span",{class:"pill"},"상한 0.5점"),
-      el("a", { href: REG_LINKS.bonus, target:"_blank", rel:"noopener", class:"reglink" }, "별표1·2")));
+    // ① 전산자격 (별표1) — 직무자격과 합산 상한 0.5
+    box.appendChild(el("h3", {}, "① 전산자격 가점 ", el("span",{class:"pill"},"직무자격과 합산 상한 0.5점"),
+      el("a", { href: REG_LINKS.bonus, target:"_blank", rel:"noopener", class:"reglink" }, "제3조·별표1")));
     if (gyeonghyo) {
-      const compSel = el("select", { class:"input", onchange:e=>{ bm.cert.computer=e.target.value; recompute(); } },
-        opt("", "전산 자격증 없음", bm.cert.computer),
-        ...CERT_BONUS.computer.map(c => opt(c.id, `${c.name} (${c.point}점)`, bm.cert.computer)));
-      box.appendChild(el("div", { class:"row" }, el("div",{class:"lbl"},"전산 자격증", el("small",{},"컴활·워드, 소방경 이하")), el("div",{class:"ctrl"}, compSel)));
+      const compSel = el("select", { class:"input", onchange:e=>{ bm.computer.id=e.target.value; recompute(); } },
+        opt("", "전산 자격증 없음", bm.computer.id),
+        ...CERT_BONUS.computer.map(c => opt(c.id, `${c.name} (${c.point}점)`, bm.computer.id)));
+      box.appendChild(el("div", { class:"row" }, el("div",{class:"lbl"},"전산 자격증", el("small",{},"국가기술자격법 워드프로세서·컴퓨터활용능력, 소방경 이하만")), el("div",{class:"ctrl"}, compSel)));
+      box.appendChild(acqRow(bm.computer, "전산자격 현 계급 취득"));
+    } else {
+      box.appendChild(el("p", { class:"section-note" }, "전산자격 가점은 소방경 이하만 대상입니다(별표1 비고)."));
     }
-    const jobSel = el("select", { class:"input", onchange:e=>{ bm.cert.jobTier=Number(e.target.value)||0; recompute(); } },
-      opt(0, "직무 자격증 없음", bm.cert.jobTier),
-      ...CERT_BONUS.jobTiers.map(t => opt(t.point, `${t.point}점 등급`, bm.cert.jobTier)));
-    box.appendChild(el("div", { class:"row" }, el("div",{class:"lbl"},"직무 자격증 등급"), el("div",{class:"ctrl"}, jobSel)));
-    const curTier = CERT_BONUS.jobTiers.find(t=>t.point===Number(bm.cert.jobTier));
-    if (curTier) box.appendChild(el("p", { class:"section-note", style:"margin-top:0" }, curTier.desc));
-    box.appendChild(acqRow(bm.cert));
-    box.appendChild(el("p", { class:"section-note" }, "※ 전문능력성적으로 이미 평정된 자격증은 가점 중복 불가(제9조). 같은 종류는 가장 높은 것 1개만."));
 
-    // ② 학위 + ③ 어학 (합산 상한 0.5)
-    box.appendChild(el("h3", {}, "학위 · 어학 ", el("span",{class:"pill"},"합산 상한 0.5점"),
-      el("a", { href: REG_LINKS.bonus, target:"_blank", rel:"noopener", class:"reglink" }, "제6조·별표3")));
+    // ② 직무자격 (별표2)
+    box.appendChild(el("h3", {}, "② 직무자격 가점 ", el("span",{class:"pill"},"전산자격과 합산 상한 0.5점"),
+      el("a", { href: REG_LINKS.bonus, target:"_blank", rel:"noopener", class:"reglink" }, "제4조·별표2")));
+    const jobSel = el("select", { class:"input", onchange:e=>{ bm.job.tier=Number(e.target.value)||0; recompute(); render(); } },
+      opt(0, "직무 자격증 없음", bm.job.tier),
+      ...JOB_CERT.jobTiers.map(t => opt(t.point, `${t.point}점 등급`, bm.job.tier)));
+    box.appendChild(el("div", { class:"row" }, el("div",{class:"lbl"},"직무 자격증 등급"), el("div",{class:"ctrl"}, jobSel)));
+    const curTier = JOB_CERT.jobTiers.find(t=>t.point===Number(bm.job.tier));
+    if (curTier) box.appendChild(el("p", { class:"section-note", style:"margin-top:0" }, curTier.desc));
+    box.appendChild(acqRow(bm.job, "직무자격 현 계급 취득"));
+    box.appendChild(el("p", { class:"section-note" }, "※ 전문능력성적으로 이미 평정된 자격증은 가점으로 중복 평정할 수 없습니다(제10조①). 같은 종류는 가장 높은 것 1개만 인정."));
+
+    // ③ 언어능력 (별표3) — 학위취득과 합산 상한 0.5
+    box.appendChild(el("h3", {}, "③ 언어능력 가점 ", el("span",{class:"pill"},"학위취득과 합산 상한 0.5점"),
+      el("a", { href: REG_LINKS.bonus, target:"_blank", rel:"noopener", class:"reglink" }, "제5조·별표3")));
+    const curCat = LANG_BONUS.categories.find(c => c.id === bm.lang.category);
+    const catSel = el("select", { class:"input",
+      onchange:e=>{ bm.lang.category=e.target.value; bm.lang.test=""; bm.lang.score=""; bm.lang.grade=""; recompute(); render(); } },
+      opt("", "언어 선택 안함", bm.lang.category),
+      ...LANG_BONUS.categories.map(c => opt(c.id, c.name, bm.lang.category)));
+    box.appendChild(el("div", { class:"row" }, el("div",{class:"lbl"},"언어"), el("div",{class:"ctrl"}, catSel)));
+    if (curCat) {
+      const testSel = el("select", { class:"input",
+        onchange:e=>{ bm.lang.test=e.target.value; bm.lang.score=""; bm.lang.grade=""; recompute(); render(); } },
+        opt("", "시험 선택", bm.lang.test),
+        ...curCat.tests.map(t => opt(t.id, t.name, bm.lang.test)));
+      box.appendChild(el("div", { class:"row" }, el("div",{class:"lbl"},"시험 종류"), el("div",{class:"ctrl"}, testSel)));
+      const curTest = curCat.tests.find(t => t.id === bm.lang.test);
+      if (curTest && curTest.mode === "score") {
+        box.appendChild(el("div", { class:"row" }, el("div",{class:"lbl"},"점수/등급"),
+          el("div",{class:"ctrl"}, el("input", { class:"num-sm", type:"number", min:"0", placeholder:"점수",
+            value: bm.lang.score!=null?bm.lang.score:"",
+            oninput:e=>{ bm.lang.score= e.target.value===""?"":Number(e.target.value); recompute(); } }))));
+      } else if (curTest && curTest.mode === "grade") {
+        const gradeSel = el("select", { class:"input", onchange:e=>{ bm.lang.grade=e.target.value; recompute(); } },
+          opt("", "등급 선택", bm.lang.grade),
+          ...curTest.options.map(o => opt(o.id, `${o.label} (${o.point}점)`, bm.lang.grade)));
+        box.appendChild(el("div", { class:"row" }, el("div",{class:"lbl"},"등급"), el("div",{class:"ctrl"}, gradeSel)));
+      }
+    }
+    box.appendChild(acqRow(bm.lang, "언어능력 현 계급 취득"));
+
+    // ④ 학위취득 (제6조)
+    box.appendChild(el("h3", {}, "④ 학위취득 가점 ", el("span",{class:"pill"},"언어능력과 합산 상한 0.5점"),
+      el("a", { href: REG_LINKS.bonus, target:"_blank", rel:"noopener", class:"reglink" }, "제6조")));
     const degList = el("div", { class:"checklist" });
     DEGREE_BONUS.items.forEach(d => {
       if (d.gyeonghyoOnly && !gyeonghyo) return; // 전문학사·학사는 소방경 이하만
@@ -228,25 +266,13 @@
         el("span", {}, `${d.name} (${d.point}점)`)));
     });
     box.appendChild(degList);
-    box.appendChild(el("p", { class:"section-note", style:"margin-top:6px" }, "학위는 가장 높은 1개만 인정" + (gyeonghyo?"":" (소방령·정은 석사·박사만)")));
+    box.appendChild(el("p", { class:"section-note", style:"margin-top:6px" }, "같은 종류는 가장 높은 학위 1개만 인정" + (gyeonghyo?"":" (소방령·정은 석사·박사만 해당)")));
     box.appendChild(acqRow(bm.degree, "학위 현 계급 취득"));
-    // 어학
-    const langTestSel = el("select", { class:"input", onchange:e=>{ bm.lang.test=e.target.value; recompute(); } },
-      opt("", "어학시험 선택 안함", bm.lang.test),
-      ...LANG_BONUS.tests.map(t => opt(t.id, t.name, bm.lang.test)));
-    box.appendChild(el("div", { class:"two-col" },
-      el("div", {}, el("label",{class:"field-label"},"어학시험"), langTestSel),
-      el("div", {}, el("label",{class:"field-label"},"점수"),
-        el("input", { class:"input", type:"number", min:"0", placeholder:"예: 870",
-          value: bm.lang.score!=null?bm.lang.score:"",
-          oninput:e=>{ bm.lang.score= e.target.value===""?"":Number(e.target.value); recompute(); } }))));
-    box.appendChild(acqRow(bm.lang, "어학 현 계급 취득"));
-    box.appendChild(el("p", { class:"section-note" }, "기준(별표3): TOEIC 870/790/730, TOEFL iBT 99/90/78, TEPS(구) 800/700/630, 제2외국어 검정 80/70/60 → 0.5/0.3/0.2점. (지텔프는 규정 별표3에 없음)"));
 
-    // ④ 격무·기피부서 (상한 2.0) — 날짜 자동계산
-    box.appendChild(el("h3", {}, "격무·기피부서 근무 ", el("span",{class:"pill"},"상한 2.0점"),
+    // ⑤ 격무·기피부서 (상한 2.0) — 날짜 자동계산
+    box.appendChild(el("h3", {}, "⑤ 격무·기피부서 근무 가점 ", el("span",{class:"pill"},"상한 2.0점"),
       el("a", { href: REG_LINKS.bonus, target:"_blank", rel:"noopener", class:"reglink" }, "제7조")));
-    box.appendChild(el("p", { class:"section-note" }, "6개월 초과분에 대해 1개월당 0.05점(휴직기간 제외, 15일 이상 1개월). 현 계급 근무분만."));
+    box.appendChild(el("p", { class:"section-note" }, "근무한 날부터 1개월마다 0.05점(휴직기간·30일 이상 연속 휴가기간 제외, 15일 이상 1개월 산입). 현 계급 근무분만."));
     box.appendChild(el("div", { class:"two-col" },
       el("div", {}, el("label",{class:"field-label"},"근무 시작일"),
         el("input", { class:"input", type:"date", value:bm.hardship.start||"", oninput:e=>{ bm.hardship.start=e.target.value; recompute(); } })),
@@ -257,14 +283,19 @@
         value: bm.hardship.exclude!=null?bm.hardship.exclude:"",
         oninput:e=>{ bm.hardship.exclude= e.target.value===""?"":Number(e.target.value); recompute(); } }), el("span",{class:"unit"},"개월"))));
 
-    // ⑤ 대회·평가, ⑥ 인사교류
-    box.appendChild(el("h3", {}, "대회·평가 우수 및 인사교류 ", el("span",{class:"pill"},"상한 2.0 / 3.0점")));
-    box.appendChild(el("p", { class:"section-note" }, "부여요건·점수는 소방청장/시·도지사가 정해 공지(직접 입력)."));
-    box.appendChild(el("div", { class:"row" }, el("div",{class:"lbl"},"전국·시도 대회/평가 우수", el("small",{},"상한 2.0")),
+    // ⑥ 우수실적, ⑦ 인사교류
+    box.appendChild(el("h3", {}, "⑥ 우수실적(대회·평가) 가점 ", el("span",{class:"pill"},"상한 2.0점"),
+      el("a", { href: REG_LINKS.bonus, target:"_blank", rel:"noopener", class:"reglink" }, "제8조·별표5")));
+    box.appendChild(el("p", { class:"section-note" }, "전국단위 대회·평가 2.0점 이내/회, 시·도단위 0.5점 이내/회(계급당 시·도 총합 1.0 한도). 제안채택: 중앙우수제안(금상1.0·은상0.8·동상0.6·장려노력상0.5), 자체우수제안(특별상0.5·우수상0.3·우량상0.1). 소방청장·시도지사가 정한 요건에 한함(직접 입력)."));
+    box.appendChild(el("div", { class:"row" }, el("div",{class:"lbl"},"우수실적 가점 합계", el("small",{},"상한 2.0")),
       el("div",{class:"ctrl"}, el("input",{ class:"num-sm", type:"number", min:"0", max:"2", step:"0.1",
         value: bm.contest.value!=null?bm.contest.value:"", oninput:e=>{ bm.contest.value= e.target.value===""?"":Number(e.target.value); recompute(); } }), el("span",{class:"unit"},"/ 2"))));
-    box.appendChild(acqRow(bm.contest, "대회·평가 현 계급"));
-    box.appendChild(el("div", { class:"row" }, el("div",{class:"lbl"},"소방청장 인사교류 대상", el("small",{},"상한 3.0")),
+    box.appendChild(acqRow(bm.contest, "우수실적 현 계급"));
+
+    box.appendChild(el("h3", {}, "⑦ 인사교류 가점 ", el("span",{class:"pill"},"상한 3.0점"),
+      el("a", { href: REG_LINKS.bonus, target:"_blank", rel:"noopener", class:"reglink" }, "제9조")));
+    box.appendChild(el("p", { class:"section-note" }, "소방청(소속기관 포함)·중앙부처 근무(파견 포함) 후 같은 계급에서 시·도로 복귀한 경우만 해당. 근무 1개월마다 0.125점."));
+    box.appendChild(el("div", { class:"row" }, el("div",{class:"lbl"},"인사교류 가점", el("small",{},"상한 3.0")),
       el("div",{class:"ctrl"}, el("input",{ class:"num-sm", type:"number", min:"0", max:"3", step:"0.1",
         value: bm.exchange.value!=null?bm.exchange.value:"", oninput:e=>{ bm.exchange.value= e.target.value===""?"":Number(e.target.value); recompute(); } }), el("span",{class:"unit"},"/ 3"))));
     return box;
@@ -421,10 +452,10 @@
     if (r.bonus.total < 5 - 0.001) {
       const p = r.bonus.parts;
       const room = [
-        { name:"자격증(전산·직무)", left: 0.5 - p.cert },
-        { name:"학위·어학", left: 0.5 - p.degreeLang },
+        { name:"전산자격·직무자격", left: 0.5 - p.cert },
+        { name:"언어능력·학위취득", left: 0.5 - p.degreeLang },
         { name:"격무·기피부서", left: 2.0 - p.hardship },
-        { name:"대회·평가", left: 2.0 - p.contest },
+        { name:"우수실적", left: 2.0 - p.contest },
         { name:"인사교류", left: 3.0 - p.exchange },
       ].filter(x => x.left > 0.001);
       if (room.length) {

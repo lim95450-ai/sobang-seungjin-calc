@@ -107,22 +107,67 @@ const PRO_ABILITY = {
   },
 };
 
-// 가점(별도, 합계 5점 이내). 시행규칙 제15조의2 + 영 제11조. 항목별 상한.
-//  ※ 자격증/어학 등 세부 배점은 「소방공무원 가점평정 규정」에 있으며 여기서는 항목별 상한만 반영.
-const BONUS = {
-  total: 5.0,
-  items: [
-    { id:"cert",     name:"소방업무·전산 관련 자격증", cap:0.5, 현계급요건:true },
-    { id:"degree",   name:"학위(학사·석사·박사) 또는 어학능력", cap:0.5, 현계급요건:true },
-    { id:"hardship", name:"격무·기피부서 근무", cap:2.0, 현계급요건:true },
-    { id:"contest",  name:"전국·시도 대회/평가 우수", cap:2.0, 현계급요건:true },
-    { id:"exchange", name:"소방청장 인사교류 대상", cap:3.0, 현계급요건:false },
+// 법령 원문 링크(국가법령정보센터)
+const REG_LINKS = {
+  bonus: "https://www.law.go.kr/LSW/admRulInfoP.do?admRulSeq=2100000098087",  // 소방공무원 가점평정 규정
+  edu:   "https://www.law.go.kr/LSW/admRulInfoP.do?admRulSeq=2100000207346",  // 소방공무원 교육훈련성적 평정규정
+  rule:  "https://www.law.go.kr/법령/소방공무원승진임용규정시행규칙",           // 시행규칙
+};
+
+/* 가점(별도, 합계 5점 이내). 시행규칙 제15조의2 + 소방공무원 가점평정 규정.
+ * 항목별 상한: 자격증(전산+직무) 0.5 / 학위·어학 0.5 / 격무·기피 2.0 / 대회·평가 2.0 / 인사교류 3.0. */
+const BONUS_TOTAL = 5.0;
+
+// ① 자격증 가점 (별표1 전산 + 별표2 직무), 합산 상한 0.5점. 현 계급 취득분만.
+const CERT_BONUS = {
+  cap: 0.5,
+  // 별표1 전산능력 (소방경 이하만)
+  computer: [
+    { id:"comp1", name:"컴퓨터활용능력 1급", point:0.5 },
+    { id:"comp2", name:"컴퓨터활용능력 2급", point:0.3 },
+    { id:"word",  name:"워드프로세서", point:0.3 },
+  ],
+  // 별표2 직무 자격증 — 등급(배점)별 선택
+  jobTiers: [
+    { point:0.5, desc:"기술사·기능장(해당 분야), 1~4급 항해·기관·운항사, 운송용·사업용조종사·항공(공장)정비사, 응급구조사1급, 간호사, 화재조사관, 소방시설관리사, 소방안전교육사, 전문인명구조사, 건축사, 제1종 대형운전면허" },
+    { point:0.3, desc:"기사(해당 분야), 5·6급 항해·기관사, 응급구조사2급, 화재대응능력평가1급, 인명구조사1급" },
+    { point:0.2, desc:"산업기사·기능사(해당 분야), 소형선박조종사, 잠수산업기사·잠수기능사, 화재대응능력평가2급, 인명구조사2급" },
   ],
 };
 
+// ② 학위 (제6조). 같은 종류는 가장 높은 학위 1개만. 전문학사·학사는 소방경 이하만.
+const DEGREE_BONUS = {
+  items: [
+    { id:"assoc",  name:"전문학사", point:0.1, gyeonghyoOnly:true },
+    { id:"bach",   name:"학사",     point:0.2, gyeonghyoOnly:true },
+    { id:"master", name:"석사",     point:0.3 },
+    { id:"phd",    name:"박사",     point:0.5 },
+  ],
+};
+
+// ③ 어학 (별표3). 점수 이상이면 해당 배점. 학위와 합산 상한 0.5점.
+const LANG_BONUS = {
+  degreeLangCap: 0.5, // 학위+어학 합산 상한
+  tests: [
+    { id:"toeic", name:"TOEIC",              bands:[[870,0.5],[790,0.3],[730,0.2]] },
+    { id:"toefl", name:"TOEFL iBT",          bands:[[99,0.5],[90,0.3],[78,0.2]] },
+    { id:"teps",  name:"TEPS(구)",           bands:[[800,0.5],[700,0.3],[630,0.2]] },
+    { id:"lang2", name:"제2외국어(서울대·한국외대 검정)", bands:[[80,0.5],[70,0.3],[60,0.2]] },
+  ],
+};
+
+// ④ 격무·기피부서 (제7조①). 6개월 초과분에 대해 1개월당 0.05점, 상한 2.0점. 휴직기간 제외.
+const HARDSHIP_BONUS = { freeMonths: 6, perMonth: 0.05, cap: 2.0 };
+
+// ⑤ 대회·평가 우수(우수실적) 상한 2.0, ⑥ 인사교류 상한 3.0 — 소방청장/시도지사 기준(직접 입력)
+const CONTEST_CAP = 2.0;
+const EXCHANGE_CAP = 3.0;
+
 if (typeof module !== "undefined") {
-  module.exports = { RANKS, CAREER, rankWeights, WORK_ROUNDS, EDU_COMPOSITION, PRO_EDU, PRO_ABILITY, BONUS };
+  module.exports = { RANKS, CAREER, rankWeights, WORK_ROUNDS, EDU_COMPOSITION, PRO_EDU, PRO_ABILITY,
+    REG_LINKS, BONUS_TOTAL, CERT_BONUS, DEGREE_BONUS, LANG_BONUS, HARDSHIP_BONUS, CONTEST_CAP, EXCHANGE_CAP };
 }
 if (typeof window !== "undefined") {
-  Object.assign(window, { RANKS, CAREER, rankWeights, WORK_ROUNDS, EDU_COMPOSITION, PRO_EDU, PRO_ABILITY, BONUS });
+  Object.assign(window, { RANKS, CAREER, rankWeights, WORK_ROUNDS, EDU_COMPOSITION, PRO_EDU, PRO_ABILITY,
+    REG_LINKS, BONUS_TOTAL, CERT_BONUS, DEGREE_BONUS, LANG_BONUS, HARDSHIP_BONUS, CONTEST_CAP, EXCHANGE_CAP });
 }

@@ -9,11 +9,15 @@
     root.Engine = factory({
       RANKS: root.RANKS, CAREER: root.CAREER, rankWeights: root.rankWeights,
       WORK_ROUNDS: root.WORK_ROUNDS, EDU_COMPOSITION: root.EDU_COMPOSITION,
-      PRO_EDU: root.PRO_EDU, PRO_ABILITY: root.PRO_ABILITY, BONUS: root.BONUS,
+      PRO_EDU: root.PRO_EDU, PRO_ABILITY: root.PRO_ABILITY,
+      CERT_BONUS: root.CERT_BONUS, DEGREE_BONUS: root.DEGREE_BONUS, LANG_BONUS: root.LANG_BONUS,
+      HARDSHIP_BONUS: root.HARDSHIP_BONUS, CONTEST_CAP: root.CONTEST_CAP, EXCHANGE_CAP: root.EXCHANGE_CAP,
+      BONUS_TOTAL: root.BONUS_TOTAL,
     });
   }
 })(typeof self !== "undefined" ? self : this, function (D) {
-  const { CAREER, rankWeights, EDU_COMPOSITION, PRO_EDU, PRO_ABILITY, BONUS } = D;
+  const { CAREER, rankWeights, EDU_COMPOSITION, PRO_EDU, PRO_ABILITY,
+    CERT_BONUS, DEGREE_BONUS, LANG_BONUS, HARDSHIP_BONUS, CONTEST_CAP, EXCHANGE_CAP, BONUS_TOTAL } = D;
 
   const round2 = (x) => Math.round((x + Number.EPSILON) * 100) / 100; // 소수 셋째자리 반올림
   const round3 = (x) => Math.round((x + Number.EPSILON) * 1000) / 1000;
@@ -102,20 +106,75 @@
     return { total: 0, max, detail: [] };
   }
 
-  // 가점(별도 5점). 입력: {id: {value, 현계급취득(bool)}}
-  function bonusScore(inputMap) {
-    inputMap = inputMap || {};
-    let sum = 0; const parts = {};
-    BONUS.items.forEach(it => {
-      const raw = inputMap[it.id] || {};
-      let v = Number(raw.value) || 0;
-      // 현 계급 취득 요건 미충족 시 0
-      if (it.현계급요건 && raw.현계급취득 === false) v = 0;
-      v = clamp(v, 0, it.cap);
-      parts[it.id] = round2(v);
-      sum += parts[it.id];
-    });
-    return { parts, total: Math.min(round2(sum), BONUS.total), max: BONUS.total };
+  // 최고 등급 소방경 이하 여부(전문학사·학사, 전산 자격증은 소방경 이하만)
+  const isGyeonghyoIha = (rank) => !["소방정","소방령"].includes(rank); // 소방경 이하
+
+  // 어학 점수 → 배점
+  function langPoint(testId, score) {
+    const t = (LANG_BONUS.tests || []).find(x => x.id === testId);
+    if (!t || !score) return 0;
+    for (const [th, p] of t.bands) { if (Number(score) >= th) return p; }
+    return 0;
+  }
+
+  // 가점(별도 5점). 새 구조 입력(model.bonus):
+  //  { cert:{computer,jobTier,현계급취득}, degree:{ids[],현계급취득}, lang:{test,score,현계급취득},
+  //    hardship:{start,end,exclude}, contest:{value,현계급취득}, exchange:{value} }
+  function bonusScore(rank, b) {
+    b = b || {};
+    const parts = {};
+
+    // ① 자격증(전산+직무) 상한 0.5, 현 계급 취득분만. 전산은 소방경 이하만.
+    const cb = b.cert || {};
+    let certSum = 0;
+    if (cb.현계급취득 !== false) {
+      if (cb.computer && isGyeonghyoIha(rank)) {
+        const c = (CERT_BONUS.computer || []).find(x => x.id === cb.computer);
+        if (c) certSum += c.point;
+      }
+      certSum += Number(cb.jobTier) || 0;
+    }
+    parts.cert = Math.min(round2(certSum), CERT_BONUS.cap);
+
+    // ② 학위 — 선택 중 가장 높은 1개. 전문학사·학사는 소방경 이하만.
+    const db = b.degree || {};
+    let degPt = 0;
+    if (db.현계급취득 !== false) {
+      (db.ids || []).forEach(id => {
+        const d = (DEGREE_BONUS.items || []).find(x => x.id === id);
+        if (!d) return;
+        if (d.gyeonghyoOnly && !isGyeonghyoIha(rank)) return;
+        if (d.point > degPt) degPt = d.point;
+      });
+    }
+
+    // ③ 어학
+    const lb = b.lang || {};
+    let langPt = 0;
+    if (lb.현계급취득 !== false) langPt = langPoint(lb.test, lb.score);
+
+    // 학위+어학 합산 상한 0.5
+    parts.degree = round2(degPt);
+    parts.lang = round2(langPt);
+    const degreeLang = Math.min(round2(degPt + langPt), LANG_BONUS.degreeLangCap);
+    parts.degreeLang = degreeLang;
+
+    // ④ 격무·기피부서: 6개월 초과분 × 0.05, 상한 2.0
+    const hb = b.hardship || {};
+    const hMonths = careerMonths(hb.start, hb.end, hb.exclude);
+    const hPay = Math.max(0, hMonths - HARDSHIP_BONUS.freeMonths);
+    parts.hardship = Math.min(round2(hPay * HARDSHIP_BONUS.perMonth), HARDSHIP_BONUS.cap);
+    parts.hardshipMonths = hMonths;
+
+    // ⑤ 대회·평가(우수실적) 상한 2.0, 현 계급
+    const ct = b.contest || {};
+    parts.contest = (ct.현계급취득 === false) ? 0 : clamp(Number(ct.value) || 0, 0, CONTEST_CAP);
+
+    // ⑥ 인사교류 상한 3.0
+    parts.exchange = clamp(Number((b.exchange || {}).value) || 0, 0, EXCHANGE_CAP);
+
+    const sum = parts.cert + parts.degreeLang + parts.hardship + parts.contest + parts.exchange;
+    return { parts, total: Math.min(round2(sum), BONUS_TOTAL), max: BONUS_TOTAL };
   }
 
   const avg = (arr) => {
@@ -148,7 +207,7 @@
     const months = careerMonths(model.appointDate, model.baseDate, model.excludeMonths);
     const career = careerScore(rank, months);
     const edu = eduScore(rank, model.edu);
-    const bonus = bonusScore(model.bonus);
+    const bonus = bonusScore(rank, model.bonus);
 
     const workBoon   = round2(workRaw * w.work.factor);
     const careerBoon = round2(career.total * w.career.factor);

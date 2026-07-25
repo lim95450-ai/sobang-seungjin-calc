@@ -16,7 +16,7 @@
 //  · 경력 원점수 25점(소방정 30) → 명부 15점(소방정 20)  (×15/25, 소방정 ×20/30)
 //  · 교육훈련 원점수 15점(소방정 10) → 명부 15점(소방정 10)  (×1)
 
-const RANKS = ["소방정", "소방령", "소방경", "소방위", "소방장", "소방교", "소방사"];
+const RANKS = ["소방사", "소방교", "소방장", "소방위", "소방경", "소방령", "소방정"];
 
 // 경력평정 별표3: 월별점수 × 근무월수(기간상한 내), 소수점 셋째자리에서 반올림, 만점 상한.
 const CAREER = {
@@ -108,11 +108,16 @@ const PRO_ABILITY = {
   },
 };
 
-// 법령 원문 링크(국가법령정보센터)
+// 법령 원문 링크. 국가법령정보센터 admRulSeq 링크는 "현행이 아닌 행정규칙"으로 표시되어
+// 사용자가 업로드한 원본 PDF(소방청예규 제97호, 2024.9.30)를 사이트에 함께 배포해 직접 링크한다.
 const REG_LINKS = {
-  bonus: "https://www.law.go.kr/LSW/admRulInfoP.do?admRulSeq=2100000098087",  // 소방공무원 가점평정 규정
-  edu:   "https://www.law.go.kr/LSW/admRulInfoP.do?admRulSeq=2100000207346",  // 소방공무원 교육훈련성적 평정규정
-  rule:  "https://www.law.go.kr/법령/소방공무원승진임용규정시행규칙",           // 시행규칙
+  edu:        "https://www.law.go.kr/LSW/admRulInfoP.do?admRulSeq=2100000207346",  // 소방공무원 교육훈련성적 평정규정
+  rule:       "https://www.law.go.kr/법령/소방공무원승진임용규정시행규칙",           // 시행규칙
+  bonusMain:  "docs/gajeom-gyujeong.pdf",        // 소방공무원 가점평정 규정 본문(예규 제97호, 2024.9.30)
+  bonusAnnex1:"docs/byeolpyo1-jeonsanjagyeok.pdf", // 별표1 전산자격가산점
+  bonusAnnex2:"docs/byeolpyo2-jikmujagyeok.pdf",   // 별표2 직무자격가산점
+  bonusAnnex3:"docs/byeolpyo3-eoneoneungnyeok.pdf",// 별표3 언어능력가점평정기준
+  bonusAnnex5:"docs/byeolpyo5-usujeok.pdf",        // 별표5 우수실적가산점
 };
 
 /* 가점(별도, 합계 5점 이내). 시행규칙 제15조의2 + 소방공무원 가점평정 규정(소방청예규 제97호, 2024.9.30).

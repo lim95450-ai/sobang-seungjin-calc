@@ -195,12 +195,12 @@
     box.appendChild(el("h2", {}, "가점 ", el("span",{class:"pill"},"합계 최대 5점")));
     box.appendChild(el("p", { class:"section-note" },
       "시행규칙 제15조의2 + ",
-      el("a", { href: REG_LINKS.bonus, target:"_blank", rel:"noopener" }, "소방공무원 가점평정 규정"),
-      "(소방청예규 제97호). 각 항목은 원칙적으로 현 계급에서 취득·수행한 경우만 인정됩니다(제2조)."));
+      el("a", { href: REG_LINKS.bonusMain, target:"_blank", rel:"noopener" }, "소방공무원 가점평정 규정(PDF)"),
+      "(소방청예규 제97호, 2024.9.30). 각 항목은 원칙적으로 현 계급에서 취득·수행한 경우만 인정됩니다(제2조)."));
 
     // ① 전산자격 (별표1) — 직무자격과 합산 상한 0.5
     box.appendChild(el("h3", {}, "① 전산자격 가점 ", el("span",{class:"pill"},"직무자격과 합산 상한 0.5점"),
-      el("a", { href: REG_LINKS.bonus, target:"_blank", rel:"noopener", class:"reglink" }, "제3조·별표1")));
+      el("a", { href: REG_LINKS.bonusAnnex1, target:"_blank", rel:"noopener", class:"reglink" }, "제3조·별표1 PDF")));
     if (gyeonghyo) {
       const compSel = el("select", { class:"input", onchange:e=>{ bm.computer.id=e.target.value; recompute(); } },
         opt("", "전산 자격증 없음", bm.computer.id),
@@ -213,7 +213,7 @@
 
     // ② 직무자격 (별표2)
     box.appendChild(el("h3", {}, "② 직무자격 가점 ", el("span",{class:"pill"},"전산자격과 합산 상한 0.5점"),
-      el("a", { href: REG_LINKS.bonus, target:"_blank", rel:"noopener", class:"reglink" }, "제4조·별표2")));
+      el("a", { href: REG_LINKS.bonusAnnex2, target:"_blank", rel:"noopener", class:"reglink" }, "제4조·별표2 PDF")));
     const jobSel = el("select", { class:"input", onchange:e=>{ bm.job.tier=Number(e.target.value)||0; recompute(); render(); } },
       opt(0, "직무 자격증 없음", bm.job.tier),
       ...JOB_CERT.jobTiers.map(t => opt(t.point, `${t.point}점 등급`, bm.job.tier)));
@@ -225,7 +225,7 @@
 
     // ③ 언어능력 (별표3) — 학위취득과 합산 상한 0.5
     box.appendChild(el("h3", {}, "③ 언어능력 가점 ", el("span",{class:"pill"},"학위취득과 합산 상한 0.5점"),
-      el("a", { href: REG_LINKS.bonus, target:"_blank", rel:"noopener", class:"reglink" }, "제5조·별표3")));
+      el("a", { href: REG_LINKS.bonusAnnex3, target:"_blank", rel:"noopener", class:"reglink" }, "제5조·별표3 PDF")));
     const curCat = LANG_BONUS.categories.find(c => c.id === bm.lang.category);
     const catSel = el("select", { class:"input",
       onchange:e=>{ bm.lang.category=e.target.value; bm.lang.test=""; bm.lang.score=""; bm.lang.grade=""; recompute(); render(); } },
@@ -255,7 +255,7 @@
 
     // ④ 학위취득 (제6조)
     box.appendChild(el("h3", {}, "④ 학위취득 가점 ", el("span",{class:"pill"},"언어능력과 합산 상한 0.5점"),
-      el("a", { href: REG_LINKS.bonus, target:"_blank", rel:"noopener", class:"reglink" }, "제6조")));
+      el("a", { href: REG_LINKS.bonusMain, target:"_blank", rel:"noopener", class:"reglink" }, "제6조 PDF")));
     const degList = el("div", { class:"checklist" });
     DEGREE_BONUS.items.forEach(d => {
       if (d.gyeonghyoOnly && !gyeonghyo) return; // 전문학사·학사는 소방경 이하만
@@ -271,7 +271,7 @@
 
     // ⑤ 격무·기피부서 (상한 2.0) — 날짜 자동계산
     box.appendChild(el("h3", {}, "⑤ 격무·기피부서 근무 가점 ", el("span",{class:"pill"},"상한 2.0점"),
-      el("a", { href: REG_LINKS.bonus, target:"_blank", rel:"noopener", class:"reglink" }, "제7조")));
+      el("a", { href: REG_LINKS.bonusMain, target:"_blank", rel:"noopener", class:"reglink" }, "제7조 PDF")));
     box.appendChild(el("p", { class:"section-note" }, "근무한 날부터 1개월마다 0.05점(휴직기간·30일 이상 연속 휴가기간 제외, 15일 이상 1개월 산입). 현 계급 근무분만."));
     box.appendChild(el("div", { class:"two-col" },
       el("div", {}, el("label",{class:"field-label"},"근무 시작일"),
@@ -285,7 +285,7 @@
 
     // ⑥ 우수실적, ⑦ 인사교류
     box.appendChild(el("h3", {}, "⑥ 우수실적(대회·평가) 가점 ", el("span",{class:"pill"},"상한 2.0점"),
-      el("a", { href: REG_LINKS.bonus, target:"_blank", rel:"noopener", class:"reglink" }, "제8조·별표5")));
+      el("a", { href: REG_LINKS.bonusAnnex5, target:"_blank", rel:"noopener", class:"reglink" }, "제8조·별표5 PDF")));
     box.appendChild(el("p", { class:"section-note" }, "전국단위 대회·평가 2.0점 이내/회, 시·도단위 0.5점 이내/회(계급당 시·도 총합 1.0 한도). 제안채택: 중앙우수제안(금상1.0·은상0.8·동상0.6·장려노력상0.5), 자체우수제안(특별상0.5·우수상0.3·우량상0.1). 소방청장·시도지사가 정한 요건에 한함(직접 입력)."));
     box.appendChild(el("div", { class:"row" }, el("div",{class:"lbl"},"우수실적 가점 합계", el("small",{},"상한 2.0")),
       el("div",{class:"ctrl"}, el("input",{ class:"num-sm", type:"number", min:"0", max:"2", step:"0.1",
@@ -293,7 +293,7 @@
     box.appendChild(acqRow(bm.contest, "우수실적 현 계급"));
 
     box.appendChild(el("h3", {}, "⑦ 인사교류 가점 ", el("span",{class:"pill"},"상한 3.0점"),
-      el("a", { href: REG_LINKS.bonus, target:"_blank", rel:"noopener", class:"reglink" }, "제9조")));
+      el("a", { href: REG_LINKS.bonusMain, target:"_blank", rel:"noopener", class:"reglink" }, "제9조 PDF")));
     box.appendChild(el("p", { class:"section-note" }, "소방청(소속기관 포함)·중앙부처 근무(파견 포함) 후 같은 계급에서 시·도로 복귀한 경우만 해당. 근무 1개월마다 0.125점."));
     box.appendChild(el("div", { class:"row" }, el("div",{class:"lbl"},"인사교류 가점", el("small",{},"상한 3.0")),
       el("div",{class:"ctrl"}, el("input",{ class:"num-sm", type:"number", min:"0", max:"3", step:"0.1",

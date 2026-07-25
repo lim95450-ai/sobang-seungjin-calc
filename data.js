@@ -118,6 +118,9 @@ const REG_LINKS = {
   bonusAnnex2:"docs/byeolpyo2-jikmujagyeok.pdf",   // 별표2 직무자격가산점
   bonusAnnex3:"docs/byeolpyo3-eoneoneungnyeok.pdf",// 별표3 언어능력가점평정기준
   bonusAnnex5:"docs/byeolpyo5-usujeok.pdf",        // 별표5 우수실적가산점
+  // 제6조(학위취득)·제7조(격무·기피부서)·제9조(인사교류)는 별도 별표(표)가 없어
+  // 조문 원문을 그대로 표로 재구성한 요약 PDF(원문 인용, 수치 왜곡 없음).
+  bonusYohab: "docs/gajeom-yohab.pdf",
 };
 
 /* 가점(별도, 합계 5점 이내). 시행규칙 제15조의2 + 소방공무원 가점평정 규정(소방청예규 제97호, 2024.9.30).

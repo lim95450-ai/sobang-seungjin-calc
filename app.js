@@ -255,7 +255,7 @@
 
     // ④ 학위취득 (제6조)
     box.appendChild(el("h3", {}, "④ 학위취득 가점 ", el("span",{class:"pill"},"언어능력과 합산 상한 0.5점"),
-      el("a", { href: REG_LINKS.bonusMain, target:"_blank", rel:"noopener", class:"reglink" }, "제6조 PDF")));
+      el("a", { href: REG_LINKS.bonusYohab, target:"_blank", rel:"noopener", class:"reglink" }, "제6조 점수표 PDF")));
     const degList = el("div", { class:"checklist" });
     DEGREE_BONUS.items.forEach(d => {
       if (d.gyeonghyoOnly && !gyeonghyo) return; // 전문학사·학사는 소방경 이하만
@@ -271,7 +271,7 @@
 
     // ⑤ 격무·기피부서 (상한 2.0) — 날짜 자동계산
     box.appendChild(el("h3", {}, "⑤ 격무·기피부서 근무 가점 ", el("span",{class:"pill"},"상한 2.0점"),
-      el("a", { href: REG_LINKS.bonusMain, target:"_blank", rel:"noopener", class:"reglink" }, "제7조 PDF")));
+      el("a", { href: REG_LINKS.bonusYohab, target:"_blank", rel:"noopener", class:"reglink" }, "제7조 점수표 PDF")));
     box.appendChild(el("p", { class:"section-note" }, "근무한 날부터 1개월마다 0.05점(휴직기간·30일 이상 연속 휴가기간 제외, 15일 이상 1개월 산입). 현 계급 근무분만."));
     box.appendChild(el("div", { class:"two-col" },
       el("div", {}, el("label",{class:"field-label"},"근무 시작일"),
@@ -293,7 +293,7 @@
     box.appendChild(acqRow(bm.contest, "우수실적 현 계급"));
 
     box.appendChild(el("h3", {}, "⑦ 인사교류 가점 ", el("span",{class:"pill"},"상한 3.0점"),
-      el("a", { href: REG_LINKS.bonusMain, target:"_blank", rel:"noopener", class:"reglink" }, "제9조 PDF")));
+      el("a", { href: REG_LINKS.bonusYohab, target:"_blank", rel:"noopener", class:"reglink" }, "제9조 점수표 PDF")));
     box.appendChild(el("p", { class:"section-note" }, "소방청(소속기관 포함)·중앙부처 근무(파견 포함) 후 같은 계급에서 시·도로 복귀한 경우만 해당. 근무 1개월마다 0.125점."));
     box.appendChild(el("div", { class:"row" }, el("div",{class:"lbl"},"인사교류 가점", el("small",{},"상한 3.0")),
       el("div",{class:"ctrl"}, el("input",{ class:"num-sm", type:"number", min:"0", max:"3", step:"0.1",
